@@ -1,9 +1,7 @@
 export class WebRTC{
   connection;
-  channel;
-  channelState = {};
+  wRTCManagerChannel;
   candidates = [];
-  recievedMessages = [];
   remote;
 
   iceCandidateCallback = (candidate)=>{};
@@ -16,24 +14,17 @@ export class WebRTC{
       }
     });
     this.connection.addEventListener("datachannel", e => {
-      this.channel = e.channel;
-      this.channel.addEventListener("message", e => {
+      this.wRTCManagerChannel = e.channel;
+      this.wRTCManagerChannel.addEventListener("message", e => {
         this.recievedMessages.push(e.data);
       });
       console.log("datachannnel fired");
     });
-    this.connection.addEventListener("negotiationneeded", e => {
-      console.log("negotiationneeded");
-      if(this.connection.connectionState == "connected"){
-        console.log("再接続処理");
-        //
-        //
-        //
-        //
-      }
-    });
     this.connection.addEventListener("connectionstatechange", e => {
       console.log(this.connection.connectionState);
+    });
+    this.connection.addEventListener("negotiationneeded", async e => {
+      console.log("WebRTC nego");
     });
   }
   setIceCandidateCallback(callback){
@@ -46,37 +37,41 @@ export class WebRTC{
     await this.connection.setRemoteDescription(sdp);
   }
   async regRemoteCandidate(ice){
-    return await this.connection.addIceCandidate(ice).catch(e => {
-      console.eror("Receiver addIceCandidate error", e);
-    });;
+    this.connection.addIceCandidate(ice);
   }
   createDataChannel(){
-    this.channel = this.connection.createDataChannel("channel");
-    this.channel.addEventListener("message", e => {
-      this.recievedMessages.push(e.data);
-    });
-    this.channel.addEventListener("open", e => {
-      this.channelState.open = true;
-    });
-    this.channel.addEventListener("close", e => {
-      this.channelState.open = false;
+    this.wRTCManagerChannel = this.connection.createDataChannel("channel");
+    this.wRTCManagerChannel.addEventListener("message", async e => {
+      let d = JSON.parse(e.data);
+      switch(d.body.type){
+        case "answer":
+          this.connection.setRemoteDescription(d.body);
+          break;
+        case "offer":
+          this.channel.send(await this.connection.setRemoteDescription(d.body));
+          break;
+      }
     });
   }
 }
 
 export class WebRTCSender extends WebRTC{
+  offerReadyCallback = (answer)=>{console.log(answer);};
   constructor(config){
     super(config);
     this.createDataChannel();
-  }
-  async genSDPOffer(){
-    let offerSDP = await this.connection.createOffer();
-    this.connection.setLocalDescription(offerSDP);
-    return offerSDP;
+    this.connection.addEventListener("negotiationneeded", async e => {
+      let offerSDP = await this.connection.createOffer();
+      this.connection.setLocalDescription(offerSDP);
+      this.offerReadyCallback(offerSDP);
+    });
   }
 }
 
 export class WebRTCReciever extends WebRTC{
+  constructor(config){
+    super(config);
+  }
   async regRemoteDescription(SDPOffer){
     super.regRemoteDescription(SDPOffer);
     let answerSDP = await this.connection.createAnswer();

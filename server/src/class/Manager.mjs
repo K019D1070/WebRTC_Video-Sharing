@@ -3,14 +3,19 @@ export class Manager{
   connectState = false;
   constructor(){}
   start(){
-    this.connectState = true;
     this.#queue.forEach((packet)=>{
+      console.log("tx");
       packet.to.ws.send(packet.msg);
       this.#queue.shift();
     });
   }
-  stop(){
+  disconnected(){
+    console.log("host disconnected");
     this.connectState = false;
+  }
+  connected(){
+    this.connectState = true;
+    this.start();
   }
   addQue(to, from, message){
     message.from.id = from;

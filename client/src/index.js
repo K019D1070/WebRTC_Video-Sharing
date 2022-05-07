@@ -10,9 +10,32 @@ window.ws = new WebSocketManager(config.wsURL, role);
 
 let wrtcs = {};
 window.wrtcs = wrtcs;
+let streams = {
+  desktop: null
+};
+window.streams = streams;
 
 switch(mode){
   case "host":
+    let videoB = document.createElement("button");
+    videoB.innerText = "ビデオを有効化";
+    videoB.id = "cum";
+    videoB.addEventListener("click",async (e)=>{
+      e.target.innerText = "共有対象を再選択";
+      try {
+        streams.desktop = await navigator.mediaDevices.getDisplayMedia({audio: false, video: true});
+        //streams.desktop = await navigator.mediaDevices.getUserMedia({audio: false, video: true});
+        document.getElementById("view").srcObject = streams.desktop;
+      } catch {
+        streams.desktop = null;
+      }
+      Object.entries(wrtcs).forEach((wtcs)=>{
+        streams.desktop.getTracks().forEach(track => {
+          wtcs[1].connection.addTrack(track, streams.desktop);
+        });
+      });
+    });
+    document.getElementById("ui").insertAdjacentElement("beforeend", videoB);
     //let passwd = prompt("パスワードを設定してください(未入力で省略できます)");
     let passwd = "hogehuga";
     ws.send({
@@ -32,17 +55,20 @@ switch(mode){
     wrtc.remote = {
       role: "host"
     };
-    wrtc.genSDPOffer().then(a=>{
+    const transceiver = wrtc.connection.addTransceiver('video');
+    transceiver.direction = "recvonly";
+    wrtc.offerReadyCallback = a=>{
       ws.send({
         subject: "SDPOffer",
         body: a
       });
-    });
+    };
     wrtcs["0"] = wrtc;
     webRTCEventsSubscriber(wrtc);
     break;
 }
 ws.msgCallback = async (message)=>{
+  console.log(message.msg);
   switch(message.msg.subject){
     case "SDPOffer":
       let wrtc = new WebRTCReciever({
@@ -52,8 +78,14 @@ ws.msgCallback = async (message)=>{
       });
       wrtcs[message.msg.from.id] = wrtc;
       wrtc.remote = message.msg.from;
+      if(streams.desktop != null){
+        streams.desktop.getVideoTracks().forEach(track => {
+          wrtc.connection.addTrack(track, streams.desktop);
+        });
+      }
       webRTCEventsSubscriber(wrtc);
       let r = await wrtc.regRemoteDescription(message.msg.body);
+      console.log(r);
       message.reply({
         subject: "SDPAnswer",
         body: r
@@ -61,24 +93,14 @@ ws.msgCallback = async (message)=>{
       break;
     case "SDPAnswer":
       wrtcs[message.msg.from.id] = wrtcs["0"];
-      delete wrtcs["0"]
       wrtcs[message.msg.from.id].regRemoteDescription(message.msg.body);
+      delete wrtcs["0"];
       break;
     case "ICECandidate":
       wrtcs[message.msg.from.id].regRemoteCandidate(message.msg.body);
       break;
   }
 };
-document.getElementById("cam").addEventListener("click",async ()=>{
-  let localStream;
-  try {
-    localStream = await navigator.mediaDevices.getDisplayMedia({audio: false, video: true});
-    localStream.getTracks().forEach(track => wrtc.connection.addTrack(track, localStream));
-    document.getElementById("view").srcObject = localStream;
-  } catch {
-    localStream = undefined;
-  }
-});
 
 function webRTCEventsSubscriber(wrtc){
   wrtc.iceCandidateCallback = (candidate)=>{
@@ -90,6 +112,7 @@ function webRTCEventsSubscriber(wrtc){
   }
   wrtc.connection.addEventListener("track", e => {
     document.getElementById("view").srcObject =e.streams[0];
+    setTimeout(()=>{document.getElementById("view").play();},3000);
     console.log("trackR");
   });
 }

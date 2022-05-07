@@ -29,7 +29,8 @@ wss.on('connection', function connection(ws) {
       msg = JSON.parse(data);
     }catch{
     }
-    console.log(msg);
+    //console.log(msg);
+    console.log(msg.subject);
     if(msg.to.role == "wsserver" && msg.subject == "login" && msg.body != undefined){
       let hashedPass = createHash("sha3-512").update(msg.body).digest("hex");
       if(hashedPass == pass || pass === true){
@@ -39,8 +40,8 @@ wss.on('connection', function connection(ws) {
         }
         console.log("logged in.");
         host.ws = ws;
-        man.start();
-        ws.addEventListener("close", man.stop)
+        man.connected();
+        ws.addEventListener("close", ()=>man.disconnected())
       }else{
         console.log("login failed.");
       }
