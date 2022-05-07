@@ -29,8 +29,7 @@ wss.on('connection', function connection(ws) {
       msg = JSON.parse(data);
     }catch{
     }
-    //console.log(msg);
-    console.log(msg.subject);
+    console.log(msg);
     if(msg.to.role == "wsserver" && msg.subject == "login" && msg.body != undefined){
       let hashedPass = createHash("sha3-512").update(msg.body).digest("hex");
       if(hashedPass == pass || pass === true){

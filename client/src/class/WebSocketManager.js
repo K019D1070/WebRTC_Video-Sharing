@@ -1,49 +1,41 @@
 export class WebSocketManager{
   #ws;
   #que = [];
-  #default = {};
+  config = {
+    from: {
+      role: null,
+      id: null
+    },
+    to: {
+      role: null,
+      id: null
+    }
+  };
   msgCallback = (msg)=>{console.log(msg);};
-  constructor(config, role){
+  constructor(config){
     this.#ws = new WebSocket(config);
 
-    this.#default = {
-      from: {
-        role: role
-      },
-      to: {
-        role: ((role)=>{if(role == "host"){return "invitator"}return "host";})(role)
-      }
-    }
     this.#ws.addEventListener("open",()=>{
       this.#s();
     });
     this.#ws.addEventListener("message",(e)=>{
       let message = JSON.parse(e.data);
-      let msg = {
-        msg: message,
-        reply: (m)=>{
-          this.send({
-            ...{
-              to: message.from,
-              from: message.to,
-            },
-            ...m
-          });
-        }
-      }
-      this.msgCallback(msg);
+      this.msgCallback(message);
     });
   }
   #s(){
     this.#que.forEach((message)=>{
       this.#que.shift();
-      if(message.from == undefined)message.from = {...this.#default.from, ...message.from}
-      if(message.to == undefined)message.to= {...this.#default.to, ...message.to}
       this.#ws.send(JSON.stringify(message));
     });
   }
-  send(message){
-    this.#que.push(message);
+  send(message, options){
+    let msg = {
+      body: message,
+      ...this.config,
+      ...options
+    };
+    this.#que.push(msg);
     if(this.#ws.readyState == 1){
       this.#s();
     }

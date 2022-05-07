@@ -1,3 +1,3 @@
 export let config = {
-  wsURL: "ws://192.168.1.10:8080"
+  wsURL: "ws://localhost:8080"
 }

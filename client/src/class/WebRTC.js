@@ -1,16 +1,15 @@
 export class WebRTC{
   connection;
   wRTCManagerChannel;
-  candidates = [];
-  remote;
+  negotiator;
 
-  iceCandidateCallback = (candidate)=>{};
-  constructor(config = {}){
+  constructor(config = {}, negotiator){
+    this.negotiator = negotiator;
+
     this.connection = new RTCPeerConnection(config);
     this.connection.addEventListener("icecandidate", e => {
       if(e.candidate){
-        this.candidates.push(e.candidate);
-        this.iceCandidateCallback(e.candidate);
+        this.negotiator.send(e.candidate, {subject: "ICECandidate"});
       }
     });
     this.connection.addEventListener("datachannel", e => {
@@ -25,12 +24,6 @@ export class WebRTC{
     });
     this.connection.addEventListener("negotiationneeded", async e => {
       console.log("WebRTC nego");
-    });
-  }
-  setIceCandidateCallback(callback){
-    this.iceCandidateCallback = callback;
-    this.candidates.forEach(candidate => {
-      this.iceCandidateCallback(candidate);
     });
   }
   async regRemoteDescription(sdp){
@@ -57,25 +50,22 @@ export class WebRTC{
 
 export class WebRTCSender extends WebRTC{
   offerReadyCallback = (answer)=>{console.log(answer);};
-  constructor(config){
-    super(config);
+  constructor(config, negotiator){
+    super(config, negotiator);
     this.createDataChannel();
     this.connection.addEventListener("negotiationneeded", async e => {
       let offerSDP = await this.connection.createOffer();
       this.connection.setLocalDescription(offerSDP);
-      this.offerReadyCallback(offerSDP);
+      this.negotiator.send(offerSDP, {subject: "SDPOffer"});
     });
   }
 }
 
 export class WebRTCReciever extends WebRTC{
-  constructor(config){
-    super(config);
-  }
   async regRemoteDescription(SDPOffer){
     super.regRemoteDescription(SDPOffer);
     let answerSDP = await this.connection.createAnswer();
     this.connection.setLocalDescription(answerSDP);
-    return answerSDP;
+    this.negotiator.send(answerSDP, {subject: "SDPAnswer"});
   }
 }

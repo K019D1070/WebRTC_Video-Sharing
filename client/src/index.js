@@ -7,6 +7,8 @@ let queries = new URLSearchParams(document.location.search);
 let mode = queries.get("mode");
 let role = (()=>{if(mode == "host"){return "host";}return "invitator";})();
 window.ws = new WebSocketManager(config.wsURL, role);
+ws.config.from.role = role;
+ws.config.to.role = ((role)=>{if(role == "host"){return "invitator"}return "host";})(role);
 
 let wrtcs = {};
 window.wrtcs = wrtcs;
@@ -20,6 +22,13 @@ switch(mode){
     let videoB = document.createElement("button");
     videoB.innerText = "ビデオを有効化";
     videoB.id = "cum";
+    try {
+      streams.desktop = await navigator.mediaDevices.getDisplayMedia({audio: false, video: true});
+      //streams.desktop = await navigator.mediaDevices.getUserMedia({audio: false, video: true});
+      document.getElementById("view").srcObject = streams.desktop;
+    } catch {
+      streams.desktop = null;
+    }
     videoB.addEventListener("click",async (e)=>{
       e.target.innerText = "共有対象を再選択";
       try {
@@ -37,82 +46,70 @@ switch(mode){
     });
     document.getElementById("ui").insertAdjacentElement("beforeend", videoB);
     //let passwd = prompt("パスワードを設定してください(未入力で省略できます)");
-    let passwd = "hogehuga";
-    ws.send({
-      to: {
-        role: "wsserver"
+    let passwd = "prompt(\"パスワードを設定してください(未入力で省略できます)\")";
+    ws.send(
+      passwd,
+      {
+        subject: "login",
+        to: {role: "wsserver"},
+        from: {role: "host"}
       },
-      subject: "login",
-      body: passwd
-    });
+    );
     break;
   default:
-    let wrtc = new WebRTCSender({
-      iceServers: [{
-        urls: "stun:stun.l.google.com:19302"
-      }]
-    });
-    wrtc.remote = {
-      role: "host"
-    };
+    let wrtc = new WebRTCSender(
+      {
+        iceServers: [{
+          urls: "stun:stun.l.google.com:19302"
+        }]
+      },
+      ws
+    );
     const transceiver = wrtc.connection.addTransceiver('video');
     transceiver.direction = "recvonly";
-    wrtc.offerReadyCallback = a=>{
-      ws.send({
-        subject: "SDPOffer",
-        body: a
-      });
-    };
     wrtcs["0"] = wrtc;
     webRTCEventsSubscriber(wrtc);
     break;
 }
 ws.msgCallback = async (message)=>{
-  console.log(message.msg);
-  switch(message.msg.subject){
+  console.log(message);
+  switch(message.subject){
     case "SDPOffer":
-      let wrtc = new WebRTCReciever({
-        iceServers: [{
-          urls: "stun:stun.l.google.com:19302"
-        }]
-      });
-      wrtcs[message.msg.from.id] = wrtc;
-      wrtc.remote = message.msg.from;
+      let wrtc = new WebRTCReciever(
+        {
+          iceServers: [{
+            urls: "stun:stun.l.google.com:19302"
+          }]
+        },
+        ws
+      );
+      ws.config.to = message.from;
+      wrtcs[message.from.id] = wrtc;
+      const transceiver = wrtc.connection.addTransceiver('video');
+      //const transceiver = wrtc.connection.addTransceiver(streams.desktop.getVideoTracks()[0]);
+      transceiver.direction = "sendonly";
       if(streams.desktop != null){
         streams.desktop.getVideoTracks().forEach(track => {
           wrtc.connection.addTrack(track, streams.desktop);
         });
       }
       webRTCEventsSubscriber(wrtc);
-      let r = await wrtc.regRemoteDescription(message.msg.body);
-      console.log(r);
-      message.reply({
-        subject: "SDPAnswer",
-        body: r
-      });
+      wrtc.regRemoteDescription(message.body);
       break;
     case "SDPAnswer":
-      wrtcs[message.msg.from.id] = wrtcs["0"];
-      wrtcs[message.msg.from.id].regRemoteDescription(message.msg.body);
+      if(wrtcs["0"] != undefined)wrtcs[message.from.id] = wrtcs["0"];
+      wrtcs[message.from.id].regRemoteDescription(message.body);
       delete wrtcs["0"];
       break;
     case "ICECandidate":
-      wrtcs[message.msg.from.id].regRemoteCandidate(message.msg.body);
+      wrtcs[message.from.id].regRemoteCandidate(message.body);
       break;
   }
 };
 
 function webRTCEventsSubscriber(wrtc){
-  wrtc.iceCandidateCallback = (candidate)=>{
-    ws.send({
-      to: wrtc.remote,
-      subject: "ICECandidate",
-      body: candidate
-    });
-  }
   wrtc.connection.addEventListener("track", e => {
     document.getElementById("view").srcObject =e.streams[0];
-    setTimeout(()=>{document.getElementById("view").play();},3000);
     console.log("trackR");
   });
 }
