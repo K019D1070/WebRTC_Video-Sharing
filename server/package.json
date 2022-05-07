@@ -1,0 +1,14 @@
+{
+  "name": "websocket-server_to_webrtc",
+  "version": "0.0.0",
+  "description": "WebRTCのシグナリング用WebSocketサーバー",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "node ./src/index.mjs"
+  },
+  "author": "K019D1070",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.6.0"
+  }
+}
