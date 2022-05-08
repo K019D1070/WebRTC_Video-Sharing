@@ -36,14 +36,20 @@ export class WebRTC{
     this.wRTCManagerChannel = this.connection.createDataChannel("channel");
     this.wRTCManagerChannel.addEventListener("message", async e => {
       let d = JSON.parse(e.data);
-      switch(d.body.type){
-        case "answer":
-          this.connection.setRemoteDescription(d.body);
-          break;
-        case "offer":
-          this.channel.send(await this.connection.setRemoteDescription(d.body));
+      switch(d.subject){
+        case "nego":
+          console.log("再ネゴシエーション");
+          this.negotiation();
           break;
       }
+    });
+  }
+  send(msg){
+    this.wRTCManagerChannel.send(JSON.stringify(msg));
+  }
+  negotiation(){
+    this.send({
+      subject: "nego"
     });
   }
 }
@@ -53,11 +59,14 @@ export class WebRTCSender extends WebRTC{
   constructor(config, negotiator){
     super(config, negotiator);
     this.createDataChannel();
-    this.connection.addEventListener("negotiationneeded", async e => {
-      let offerSDP = await this.connection.createOffer();
-      this.connection.setLocalDescription(offerSDP);
-      this.negotiator.send(offerSDP, {subject: "SDPOffer"});
+    this.connection.addEventListener("negotiationneeded", e => {
+      this.negotiation();
     });
+  }
+  async negotiation(){
+    let offerSDP = await this.connection.createOffer();
+    this.connection.setLocalDescription(offerSDP);
+    this.negotiator.send(offerSDP, {subject: "SDPOffer"});
   }
 }
 

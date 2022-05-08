@@ -22,13 +22,6 @@ switch(mode){
     let videoB = document.createElement("button");
     videoB.innerText = "ビデオを有効化";
     videoB.id = "cum";
-    try {
-      streams.desktop = await navigator.mediaDevices.getDisplayMedia({audio: false, video: true});
-      //streams.desktop = await navigator.mediaDevices.getUserMedia({audio: false, video: true});
-      document.getElementById("view").srcObject = streams.desktop;
-    } catch {
-      streams.desktop = null;
-    }
     videoB.addEventListener("click",async (e)=>{
       e.target.innerText = "共有対象を再選択";
       try {
@@ -39,9 +32,7 @@ switch(mode){
         streams.desktop = null;
       }
       Object.entries(wrtcs).forEach((wtcs)=>{
-        streams.desktop.getTracks().forEach(track => {
-          wtcs[1].connection.addTrack(track, streams.desktop);
-        });
+        wtcs[1].negotiation();
       });
     });
     document.getElementById("ui").insertAdjacentElement("beforeend", videoB);
@@ -72,7 +63,6 @@ switch(mode){
     break;
 }
 ws.msgCallback = async (message)=>{
-  console.log(message);
   switch(message.subject){
     case "SDPOffer":
       let wrtc = new WebRTCReciever(
@@ -85,9 +75,9 @@ ws.msgCallback = async (message)=>{
       );
       ws.config.to = message.from;
       wrtcs[message.from.id] = wrtc;
-      const transceiver = wrtc.connection.addTransceiver('video');
+      //const transceiver = wrtc.connection.addTransceiver('video');
       //const transceiver = wrtc.connection.addTransceiver(streams.desktop.getVideoTracks()[0]);
-      transceiver.direction = "sendonly";
+      //transceiver.direction = "sendonly";
       if(streams.desktop != null){
         streams.desktop.getVideoTracks().forEach(track => {
           wrtc.connection.addTrack(track, streams.desktop);
