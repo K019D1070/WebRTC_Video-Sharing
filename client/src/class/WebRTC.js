@@ -3,6 +3,7 @@ export class WebRTC{
   wRTCManagerChannel;
   negotiator;
 
+  killCallback = ()=>{};
   constructor(config = {}, negotiator){
     this.negotiator = negotiator;
 
@@ -20,6 +21,9 @@ export class WebRTC{
       console.log("datachannnel fired");
     });
     this.connection.addEventListener("connectionstatechange", e => {
+      if(this.connection.connectionState == "failed"){
+        this.killCallback();
+      }
       console.log(this.connection.connectionState);
     });
     this.connection.addEventListener("negotiationneeded", async e => {
@@ -38,14 +42,16 @@ export class WebRTC{
       let d = JSON.parse(e.data);
       switch(d.subject){
         case "nego":
-          console.log("再ネゴシエーション");
-          this.negotiation();
+          console.log("再ネゴシエーション勧告");
+          setTimeout(()=>this.negotiation(), 5000);
           break;
       }
     });
   }
   send(msg){
-    this.wRTCManagerChannel.send(JSON.stringify(msg));
+    if(this.wRTCManagerChannel != undefined && this.wRTCManagerChannel.readyState == "open"){
+      this.wRTCManagerChannel.send(JSON.stringify(msg));
+    }
   }
   negotiation(){
     this.send({

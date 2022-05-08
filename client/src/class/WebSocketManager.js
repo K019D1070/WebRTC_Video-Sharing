@@ -11,17 +11,19 @@ export class WebSocketManager{
       id: null
     }
   };
-  msgCallback = (msg)=>{console.log(msg);};
-  constructor(config){
-    this.#ws = new WebSocket(config);
 
-    this.#ws.addEventListener("open",()=>{
-      this.#s();
+  msgCallback = (msg)=>{console.log(msg);};
+  constructor(server){
+    this.#ws = new WebSocket(server.server);
+    this.init(this.#ws);
+    this.#ws.addEventListener("error",(e)=>{
+      console.error(e);
+      console.log("フォールバック");
+      console.log(this.#ws);
+      this.#ws = new WebSocket(server.fallback);
+      this.init(this.#ws);
     });
-    this.#ws.addEventListener("message",(e)=>{
-      let message = JSON.parse(e.data);
-      this.msgCallback(message);
-    });
+
   }
   #s(){
     this.#que.forEach((message)=>{
@@ -39,5 +41,14 @@ export class WebSocketManager{
     if(this.#ws.readyState == 1){
       this.#s();
     }
+  }
+  init(ws){
+    ws.addEventListener("open",()=>{
+      this.#s();
+    });
+    ws.addEventListener("message",(e)=>{
+      let message = JSON.parse(e.data);
+      this.msgCallback(message);
+    });
   }
 }

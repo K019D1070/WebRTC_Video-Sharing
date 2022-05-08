@@ -14,6 +14,16 @@ html {
   display: flex;
   justify-content: center;
 }
+.ui button {
+  width: 10rem;
+}
+div.fps{
+  margin: auto 0;
+  height: fit-content;
+}
+div.fps input{
+  width: 3em;
+}
 video {
   object-fit: contain;
   width:100%;
