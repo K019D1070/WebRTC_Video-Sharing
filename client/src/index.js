@@ -6,9 +6,10 @@ import { WebSocketManager } from "./class/WebSocketManager.js";
 let queries = new URLSearchParams(document.location.search);
 let mode = queries.get("mode");
 let role = (()=>{if(mode == "host"){return "host";}return "invitator";})();
-window.ws = new WebSocketManager(config.ws);
+let ws = new WebSocketManager(config.ws);
 ws.config.from.role = role;
 ws.config.to.role = ((role)=>{if(role == "host"){return "invitator"}return "host";})(role);
+window.ws = ws;
 
 let wrtcs = {};
 window.wrtcs = wrtcs;
@@ -68,7 +69,6 @@ switch(mode){
     fpsI.insertAdjacentHTML("beforebegin", "共有前に設定してください<br>");
     fpsI.insertAdjacentText("afterend", "fps");
     let passwd = prompt("パスワードを設定してください(未入力で省略できます)");
-    //let passwd = "prompt(\"パスワードを設定してください(未入力で省略できます)\")";
     ws.send(
       passwd,
       {
@@ -144,7 +144,7 @@ function webRTCEventsSubscriber(wrtc){
   });
 }
 function renego(){
-  Object.entries(wrtcs).forEach((wtcs)=>{
+ wrtcs.forEach((wtcs)=>{
     wtcs[1].negotiation();
   });
 }
