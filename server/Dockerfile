@@ -14,9 +14,6 @@ RUN useradd -m proxyuser
 #USER proxyuser
 RUN git clone https://github.com/nodenv/nodenv.git ~/.nodenv
 RUN cd ~/.nodenv && src/configure && make -C src
-#COPY nodenvInit.sh /home/proxyuser/nodenvInit.sh
-#COPY nodenvInit.sh ~/nodenvInit.sh
-#RUN sh ~/nodenvInit.sh
 ENV PATH /home/proxyuser/.nodenv/bin:$PATH
 #RUN nodenv init
 #CMD [ "./nodenvInit.sh" ]
