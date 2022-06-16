@@ -6,9 +6,9 @@ RUN apt-get install -y git
 RUN apt-get install -y make gcc
 RUN apt-get install -y nginx
 COPY ./proxy.conf /etc/nginx/conf.d/proxy.conf
-CMD [ "/usr/sbin/nginx" ]
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-EXPOSE 8000
+CMD [ "/usr/sbin/nginx" ]
+EXPOSE 8443
 
 RUN useradd -m proxyuser
 #USER proxyuser
