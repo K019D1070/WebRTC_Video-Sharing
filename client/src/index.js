@@ -1,4 +1,4 @@
-import { config } from "../config/config.js";
+import { config } from "./config.js";
 import { WebRTCSender, WebRTCReciever } from "./class/WebRTC.js";
 import { WebSocketManager } from "./class/WebSocketManager.js";
 

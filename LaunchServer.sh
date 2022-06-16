@@ -1,3 +1,3 @@
 #/bin/sh
-node server/src/index.mjs
+node server/messaging-server/src/index.mjs
 
