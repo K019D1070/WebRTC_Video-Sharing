@@ -1,22 +1,31 @@
 FROM ubuntu:20.04
 ENV TZ=Asia/Tokyo
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN apt-get update
+RUN apt-get update && date
+RUN apt-get install -y sudo
 RUN apt-get install -y git
 RUN apt-get install -y make gcc
-RUN apt-get install -y nginx
-COPY ./proxy.conf /etc/nginx/conf.d/proxy.conf
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-CMD [ "/usr/sbin/nginx" ]
-EXPOSE 8443
+RUN apt-get install -y curl wget aria2
+EXPOSE 8080
 
-RUN useradd -m proxyuser
-#USER proxyuser
-RUN git clone https://github.com/nodenv/nodenv.git ~/.nodenv
-RUN cd ~/.nodenv && src/configure && make -C src
-ENV PATH /home/proxyuser/.nodenv/bin:$PATH
-#RUN nodenv init
-#CMD [ "./nodenvInit.sh" ]
-COPY messaging-server/src /home/proxyuser/messaging-server/
+ARG username=msgsvrusr
+RUN echo "root:root" | chpasswd && \
+  adduser --disabled-password --gecos "" "${username}" && \
+  echo "${username}:${username}" | chpasswd && \
+  echo "%${username}    ALL=(ALL)   NOPASSWD:    ALL" >> /etc/sudoers.d/${username} && \
+  chmod 0440 /etc/sudoers.d/${username}
+USER "${username}"
+ARG home="/home/${username}"
 
-#CMD 
+RUN mkdir "${home}/tmp"
+WORKDIR "${home}/tmp"
+COPY scripts/installNodenv.sh ${home}/tmp
+RUN ./installNodenv.sh
+COPY messaging-server "${home}/messaging-server/"
+RUN sudo chown -R ${username} ${home}/messaging-server
+RUN mkdir ~/.ssh
+RUN echo "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+COPY scripts/setupMsgServer.sh ${home}/tmp
+RUN ./setupMsgServer.sh
+COPY scripts/startServer.sh ~/startServer.sh
+CMD [ "sh", "~/startServer.sh" ]
