@@ -19,12 +19,12 @@ ARG home="/home/${username}"
 
 RUN mkdir "${home}/tmp"
 WORKDIR "${home}/tmp"
-COPY scripts/installNodenv.sh ~/tmp
-COPY scripts/setupMsgServer.sh ~/tmp
-RUN sudo chown -R ${username} ~/tmp
+COPY scripts/installNodenv.sh "${home}/tmp"
+COPY scripts/setupMsgServer.sh "${home}/tmp"
+RUN sudo chown -R ${username} "${home}/tmp"
 
 
-RUN ./installNodenv.sh
+RUN "./installNodenv.sh"
 COPY messaging-server ~/messaging-server/
 RUN sudo chown -R ${username} ~/messaging-server
 RUN mkdir ~/.ssh
