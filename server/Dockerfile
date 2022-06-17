@@ -19,13 +19,17 @@ ARG home="/home/${username}"
 
 RUN mkdir "${home}/tmp"
 WORKDIR "${home}/tmp"
-COPY scripts/installNodenv.sh ${home}/tmp
+COPY scripts/installNodenv.sh ~/tmp
+COPY scripts/setupMsgServer.sh ~/tmp
+RUN sudo chown -R ${username} ~/tmp
+
+
 RUN ./installNodenv.sh
-COPY messaging-server "${home}/messaging-server/"
-RUN sudo chown -R ${username} ${home}/messaging-server
+COPY messaging-server ~/messaging-server/
+RUN sudo chown -R ${username} ~/messaging-server
 RUN mkdir ~/.ssh
 RUN echo "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-COPY scripts/setupMsgServer.sh ${home}/tmp
 RUN ./setupMsgServer.sh
 COPY scripts/startServer.sh ~/startServer.sh
+RUN sudo chown -R ${username} ~/startServer.sh
 CMD [ "sh", "~/startServer.sh" ]
