@@ -25,11 +25,11 @@ RUN sudo chown -R ${username} "${home}/tmp"
 
 
 RUN "./installNodenv.sh"
-COPY messaging-server ~/messaging-server/
-RUN sudo chown -R ${username} ~/messaging-server
+COPY messaging-server "${home}/messaging-server/"
+RUN sudo chown -R ${username} "${home}/messaging-server"
 RUN mkdir ~/.ssh
 RUN echo "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 RUN ./setupMsgServer.sh
-COPY scripts/startServer.sh ~/startServer.sh
-RUN sudo chown -R ${username} ~/startServer.sh
-CMD [ "sh", "~/startServer.sh" ]
+COPY scripts/startServer.sh "${home}/startServer.sh"
+RUN sudo chown -R ${username} "${home}/startServer.sh"
+#CMD [ "sh", "~/startServer.sh" ]
