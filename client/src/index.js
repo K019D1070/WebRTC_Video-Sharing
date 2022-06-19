@@ -144,7 +144,7 @@ function webRTCEventsSubscriber(wrtc){
   });
 }
 function renego(){
- wrtcs.keys().forEach((k)=>{
-    wtcs[k].negotiation();
+  Object.keys(wrtcs).forEach((k)=>{
+    wrtcs[k].negotiation();
   });
 }
