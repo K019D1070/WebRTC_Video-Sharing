@@ -11,7 +11,7 @@ ws.config.from.role = role;
 ws.config.to.role = ((role)=>{if(role == "host"){return "invitator"}return "host";})(role);
 window.ws = ws;
 
-let wrtcs = {};
+let wrtcs = [];
 window.wrtcs = wrtcs;
 let streams = {
   desktop: null
@@ -144,7 +144,7 @@ function webRTCEventsSubscriber(wrtc){
   });
 }
 function renego(){
- wrtcs.forEach((wtcs)=>{
-    wtcs[1].negotiation();
+ wrtcs.forEach((wrtc)=>{
+    wrtc.negotiation();
   });
 }
