@@ -1,14 +1,18 @@
 import { config } from "./config/config.js";
 import { WebRTCSender, WebRTCReciever } from "./class/WebRTC.js";
 import { WebSocketManager } from "./class/WebSocketManager.js";
+import { Morita } from "./class/Morita.js";
+import { Negotiator } from "./class/Negotiator.js";
 
 
 let queries = new URLSearchParams(document.location.search);
 let mode = queries.get("mode");
 let role = (()=>{if(mode == "host"){return "host";}return "invitator";})();
-let ws = new WebSocketManager(config.ws);
-ws.config.from.role = role;
-ws.config.to.role = ((role)=>{if(role == "host"){return "invitator"}return "host";})(role);
+
+let morita = new Morita(role);
+window.morita = morita;
+//この下を適宜Moritaに移植(予定)
+/*let ws = new WebSocketManager(config.ws);
 window.ws = ws;
 
 let wrtcs = {};
@@ -17,6 +21,7 @@ let streams = {
   desktop: null
 };
 window.streams = streams;
+*/
 
 document.getElementById("renegotiation").addEventListener("click",renego);
 
@@ -73,8 +78,7 @@ switch(mode){
       passwd,
       {
         subject: "login",
-        to: {role: "wsserver"},
-        from: {role: "host"}
+        to: {role: "wsserver"}
       },
     );
     break;
@@ -96,15 +100,15 @@ switch(mode){
 ws.msgCallback = async (message)=>{
   switch(message.subject){
     case "SDPOffer":
+      let negotiator = new Negotiator(ws,{to:message.from});
       let wrtc = new WebRTCReciever(
         {
           iceServers: [{
             urls: "stun:stun.l.google.com:19302"
           }]
         },
-        ws
+        negotiator
       );
-      ws.config.to = message.from;
       wrtcs[message.from.id] = wrtc;
       wrtcs[message.from.id].killCallback = ()=>{
         delete wrtcs[message.from.id];

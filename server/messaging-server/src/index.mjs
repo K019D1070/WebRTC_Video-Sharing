@@ -30,38 +30,36 @@ wss.on('connection', function connection(ws) {
     }catch{
     }
     //console.log(msg);
-    if(msg.to.role == "wsserver" && msg.subject == "login" && msg.body != undefined){
-      let hashedPass = createHash("sha3-512").update(msg.body).digest("hex");
-      if(hashedPass == pass || pass === true){
-        if(pass === true){
-          pass = hashedPass;
-          console.log("password set."+ "\n"+ pass);
+    switch(true){
+      case msg.to.role == "wsserver" && msg.subject == "login" && msg.body != undefined:
+        let hashedPass = createHash("sha3-512").update(msg.body).digest("hex");
+        if(hashedPass == pass || pass === true){
+          if(pass === true){
+            pass = hashedPass;
+            console.log("password set."+ "\n"+ pass);
+          }
+          console.log("logged in.");
+          host.ws = ws;
+          man.connected();
+          ws.addEventListener("close", ()=>man.disconnected())
+        }else{
+          console.log("login failed.");
         }
-        console.log("logged in.");
-        host.ws = ws;
-        man.connected();
-        ws.addEventListener("close", ()=>man.disconnected())
-      }else{
-        console.log("login failed.");
-      }
-    }else{
-      switch(true){
-        case msg.to.role == "host":
-          man.addQue(
-            host,
-            connection.id,
-            msg
-          );
-          break;
-        case msg.to.id != undefined:
-          man.addQue(
-            connections[msg.to.id],
-            connection.id,
-            msg
-          );
-          break;
-      }
-      console.log("relay message.");
+        break;
+      case msg.to.role == "host":
+        man.addQue(
+          host,
+          connection.id,
+          msg
+        );
+        break;
+      case msg.to.id != undefined:
+        man.addQue(
+          connections[msg.to.id],
+          connection.id,
+          msg
+        );
+        break;
     }
     console.log("-----------------------");
   });

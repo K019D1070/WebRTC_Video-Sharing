@@ -1,16 +1,6 @@
 export class WebSocketManager{
   #ws;
   #que = [];
-  config = {
-    from: {
-      role: null,
-      id: null
-    },
-    to: {
-      role: null,
-      id: null
-    }
-  };
 
   msgCallback = (msg)=>{console.log(msg);};
   constructor(server){
@@ -34,7 +24,6 @@ export class WebSocketManager{
   send(message, options){
     let msg = {
       body: message,
-      ...this.config,
       ...options
     };
     this.#que.push(msg);
