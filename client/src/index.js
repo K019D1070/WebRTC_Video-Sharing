@@ -1,19 +1,23 @@
 import { config } from "./config/config.js";
 import { WebRTCSender, WebRTCReciever } from "./class/WebRTC.js";
 import { WebSocketManager } from "./class/WebSocketManager.js";
-import { Morita } from "./class/Morita.js";
+import { MoritaApp } from "./class/MoritaApp.js";
 import { Negotiator } from "./class/Negotiator.js";
 
 
 let queries = new URLSearchParams(document.location.search);
-let mode = queries.get("mode");
-let role = (()=>{if(mode == "host"){return "host";}return "invitator";})();
 
-let morita = new Morita(role);
+let morita = new MoritaApp();
 window.morita = morita;
-//この下を適宜Moritaに移植(予定)
+morita.wsConnect(config.ws);
+let mode = queries.getAll("mode");
+if(mode.length > 0){
+  morita.setRoles(role);
+}
+//この下を適宜Moritaに移植
 /*let ws = new WebSocketManager(config.ws);
 window.ws = ws;
+--済
 
 let wrtcs = {};
 window.wrtcs = wrtcs;
