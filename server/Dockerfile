@@ -32,4 +32,4 @@ RUN echo "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 RUN ./setupMsgServer.sh
 COPY scripts/startServer.sh "${home}/startServer.sh"
 RUN sudo chown -R ${username} "${home}/startServer.sh"
-#CMD [ "sh", "~/startServer.sh" ]
+CMD sh ~/startServer.sh
