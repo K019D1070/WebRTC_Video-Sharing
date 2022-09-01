@@ -2,6 +2,7 @@ export class WebRTC{
   connection;
   wRTCManagerChannel;
   negotiator;
+  failedCounter = 0;
 
   killCallback = ()=>{};
   constructor(config = {}, negotiator){
@@ -22,12 +23,21 @@ export class WebRTC{
     });
     this.connection.addEventListener("connectionstatechange", e => {
       if(this.connection.connectionState == "failed"){
-        this.killCallback();
+        this.connection.restartIce();
+        if(this.failedCounter++ > 10){
+          this.killCallback();
+        }
       }
       console.log(this.connection.connectionState);
     });
     this.connection.addEventListener("negotiationneeded", async e => {
       console.log("WebRTC nego");
+    });
+    this.connection.addEventListener("iceconnectionstatechange", (event) => {
+      if (this.connection.iceConnectionState === "failed") {
+        console.log("ICE restart");
+        this.connection.restartIce();
+      }
     });
   }
   async regRemoteDescription(sdp){
@@ -43,7 +53,9 @@ export class WebRTC{
       switch(d.subject){
         case "nego":
           console.log("再ネゴシエーション勧告");
-          setTimeout(()=>this.negotiation(), 5000);
+          setTimeout(()=>{
+            this.negotiation();
+          }, 5000);
           break;
       }
     });

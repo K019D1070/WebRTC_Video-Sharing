@@ -1,5 +1,6 @@
 export class WebSocketManager{
   _ws;
+  server;
   #que = [];
   config = {
     from: {
@@ -11,31 +12,14 @@ export class WebSocketManager{
       id: null
     }
   };
-
+  _fm;
   msgCallback = (msg)=>{console.log(msg);};
+
+
   constructor(server){
-    this._ws = new WebSocket(server.server);
+    this.server = server;
+    this._ws = new WebSocket(this.server);
     this.init(this._ws);
-    this._ws.addEventListener("error",(e)=>{
-      console.error(e);
-      console.log("フォールバック");
-      console.log(this._ws);
-      this._ws = new WebSocket(server.fallback);
-      this.init(this._ws);
-    });
-    this._ws.addEventListener("close", (e)=>{
-      console.log("WebSocket closed");
-      alert("WebSocket接続が切断されました。再接続します。");
-      this._ws = new WebSocket(server.server);
-      this.init(this._ws);
-      this._ws.addEventListener("error",(e)=>{
-        console.error(e);
-        console.log("フォールバック");
-        console.log(this._ws);
-        this._ws = new WebSocket(server.fallback);
-        this.init(this._ws);
-      });
-    });
   }
   #s(){
     this.#que.forEach((message)=>{
@@ -43,7 +27,7 @@ export class WebSocketManager{
       this._ws.send(JSON.stringify(message));
     });
   }
-  send(message, options){
+  send(message, options = {}){
     let msg = {
       body: message,
       ...this.config,
@@ -54,13 +38,28 @@ export class WebSocketManager{
       this.#s();
     }
   }
+  firstMessage(message, options){
+    if(message !== undefined){
+      this._fm = [message, options];
+    }
+    if(this._fm !== undefined){
+      this.send(...this._fm);
+    }
+  }
   init(ws){
+    this.firstMessage();
     ws.addEventListener("open",()=>{
       this.#s();
     });
     ws.addEventListener("message",(e)=>{
       let message = JSON.parse(e.data);
       this.msgCallback(message);
+    });
+    this._ws.addEventListener("close", (e)=>{
+      console.log("WebSocket closed");
+      console.log("WebSocket接続が切断されました。再接続します。");
+      this._ws = new WebSocket(this.server);
+      this.init(this._ws);
     });
   }
 }

@@ -1,4 +1,3 @@
-import { config } from "./config/config.js";
 import { WebRTCSender, WebRTCReciever } from "./class/WebRTC.js";
 import { WebSocketManager } from "./class/WebSocketManager.js";
 
@@ -6,7 +5,7 @@ import { WebSocketManager } from "./class/WebSocketManager.js";
 let queries = new URLSearchParams(document.location.search);
 let mode = queries.get("mode");
 let role = (()=>{if(mode == "host"){return "host";}return "invitator";})();
-let ws = new WebSocketManager(config.ws);
+let ws = new WebSocketManager("wss://6607.io:8443");
 ws.config.from.role = role;
 ws.config.to.role = ((role)=>{if(role == "host"){return "invitator"}return "host";})(role);
 window.ws = ws;
@@ -25,7 +24,7 @@ switch(mode){
     let videoB = document.createElement("button");
     let fpsI = document.createElement("input");
     let fpsArea = document.createElement("div");
-    fpsI.value = "15";
+    fpsI.value = 1;
     fpsI.type = "number";
     fpsArea.setAttribute("class", "fps");
     videoB.innerText = "ビデオを有効化";
@@ -69,7 +68,7 @@ switch(mode){
     fpsI.insertAdjacentHTML("beforebegin", "共有前に設定してください<br>");
     fpsI.insertAdjacentText("afterend", "fps");
     let passwd = prompt("パスワードを設定してください(未入力で省略できます)");
-    ws.send(
+    ws.firstMessage(
       passwd,
       {
         subject: "login",
@@ -131,6 +130,7 @@ ws.msgCallback = async (message)=>{
       delete wrtcs["0"];
       break;
     case "ICECandidate":
+      console.log(message);
       wrtcs[message.from.id].regRemoteCandidate(message.body);
       break;
   }
